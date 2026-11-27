@@ -11,7 +11,8 @@ router.get('/options', async (req, res, next) => {
   try {
     const canManageRoles = await hasPermission(req.user, 'roles', 'view');
     const canViewUsers = await hasPermission(req.user, 'users', 'view');
-    if (!canManageRoles && !canViewUsers) return res.status(403).json({ success: false, error: { message: 'You do not have permission to view roles' } });
+    const canViewReports = await hasPermission(req.user, 'reports', 'view');
+    if (!canManageRoles && !canViewUsers && !canViewReports) return res.status(403).json({ success: false, error: { message: 'You do not have permission to view roles' } });
     res.json({ success: true, data: await Role.find().select('name').sort({ name: 1 }).lean() });
   } catch (error) { next(error); }
 });
@@ -43,12 +44,13 @@ router.post('/', requirePermission('roles', 'create'), async (req, res, next) =>
 
 router.patch('/:id', requirePermission('roles', 'edit'), async (req, res, next) => {
   try {
+    const body = req.body ?? {};
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, error: { message: 'Invalid role id' } });
     const role = await Role.findById(req.params.id);
     if (!role) return res.status(404).json({ success: false, error: { message: 'Role not found' } });
-    if (req.body.name !== undefined) role.name = req.body.name;
-    if (req.body.description !== undefined) role.description = req.body.description;
-    if (req.body.permissions !== undefined) role.permissions = normalizePermissions(req.body.permissions);
+    if (body.name !== undefined) role.name = body.name;
+    if (body.description !== undefined) role.description = body.description;
+    if (body.permissions !== undefined) role.permissions = normalizePermissions(body.permissions);
     await role.save();
     res.json({ success: true, data: role });
   } catch (error) { next(error); }
@@ -69,7 +71,7 @@ function normalizePermissions(input) {
   const clean = {};
   for (const moduleName of MODULES) {
     clean[moduleName] = {};
-    for (const action of ACTIONS) clean[moduleName][action] = Boolean(input?.[moduleName]?.[action]);
+    for (const action of ACTIONS) clean[moduleName][action] = input?.[moduleName]?.[action] === true;
   }
   return clean;
 }

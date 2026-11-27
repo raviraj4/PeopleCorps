@@ -20,9 +20,11 @@ function roleFilterFromQuery(value) {
   return { role: new mongoose.Types.ObjectId(value) };
 }
 
-router.get('/diversity', authenticate, requirePermission('reports', 'view'), async (_req, res, next) => {
+router.get('/diversity', authenticate, requirePermission('reports', 'view'), async (req, res, next) => {
   try {
+    const filter = roleFilterFromQuery(req.query.role);
     const grouped = await User.aggregate([
+      { $match: filter },
       { $group: { _id: { $cond: [{ $in: [{ $ifNull: ['$gender', ''] }, ['', null]] }, 'not_provided', '$gender'] }, count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]);

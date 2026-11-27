@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import { connectDatabase } from './config/database.js';
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
@@ -12,11 +13,14 @@ import { errorHandler, notFound } from './middleware/error.middleware.js';
 
 const app = express();
 let databaseReady;
+const configuredOrigins = process.env.CLIENT_ORIGIN?.split(',').map((origin) => origin.trim()).filter(Boolean);
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN?.split(',') ?? true }));
-app.use(express.json());
+app.use(cors({ origin: configuredOrigins?.length ? configuredOrigins : true }));
+app.use(express.json({ limit: '100kb' }));
+app.get('/api/health', (_req, res) => res.json({ success: true, data: { status: 'ok' } }));
 app.use(async (_req, _res, next) => {
   try {
+    if (mongoose.connection.readyState === 0) databaseReady = undefined;
     databaseReady ??= connectDatabase();
     await databaseReady;
     next();
@@ -26,7 +30,7 @@ app.use(async (_req, _res, next) => {
   }
 });
 
-app.get('/api/health', (_req, res) => res.json({ success: true, data: { status: 'ok' } }));
+app.get('/api/health/ready', (_req, res) => res.json({ success: true, data: { status: 'ready', database: 'connected' } }));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);

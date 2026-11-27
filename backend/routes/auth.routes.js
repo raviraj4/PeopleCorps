@@ -13,7 +13,7 @@ function publicUser(user) {
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body ?? {};
-    if (!email || !password) return res.status(400).json({ success: false, error: { message: 'Email and password are required' } });
+    if (typeof email !== 'string' || !email.trim() || typeof password !== 'string' || !password) return res.status(400).json({ success: false, error: { message: 'Email and password are required' } });
     const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash').populate('role');
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ success: false, error: { message: 'Invalid credentials or inactive account' } });

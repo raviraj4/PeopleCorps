@@ -6,6 +6,10 @@ import { authenticate } from '../middleware/auth.middleware.js';
 
 const router = Router();
 
+function publicUser(user) {
+  return { id: user.id, name: user.name, email: user.email, phone: user.phone, isActive: user.isActive, role: user.role };
+}
+
 router.post('/login', async (req, res, next) => {
   try {
     const { email, password } = req.body ?? {};
@@ -14,10 +18,12 @@ router.post('/login', async (req, res, next) => {
     if (!user || !user.isActive || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ success: false, error: { message: 'Invalid credentials or inactive account' } });
     }
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET is not configured');
     const token = jwt.sign({ sub: user.id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '1d' });
-    res.json({ success: true, data: { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } } });
+    res.json({ success: true, data: { token, user: publicUser(user) } });
   } catch (error) { next(error); }
 });
 
 router.post('/logout', authenticate, (_req, res) => res.json({ success: true, data: { message: 'Logged out' } }));
+router.get('/me', authenticate, (req, res) => res.json({ success: true, data: publicUser(req.user) }));
 export default router;

@@ -3,6 +3,7 @@ export function notFound(req, _res, next) {
 }
 
 export function errorHandler(error, _req, res, _next) {
-  const status = error.status || (error.name === 'ValidationError' ? 400 : 500);
-  res.status(status).json({ success: false, error: { message: error.message || 'Internal server error' } });
+  const status = error.status || (error.name === 'ValidationError' || error.name === 'CastError' ? 400 : error.code === 11000 ? 409 : 500);
+  const message = error.code === 11000 ? 'A record with that value already exists' : error.message || 'Internal server error';
+  res.status(status).json({ success: false, error: { message } });
 }

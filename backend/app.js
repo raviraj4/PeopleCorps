@@ -6,6 +6,8 @@ import userRoutes from './routes/user.routes.js';
 import roleRoutes from './routes/role.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import reportRoutes from './routes/report.routes.js';
+import settingsRoutes from './routes/settings.routes.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
 const app = express();
@@ -30,6 +32,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/settings', settingsRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

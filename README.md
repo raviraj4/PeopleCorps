@@ -17,16 +17,26 @@ MERN assignment scaffold designed for local development and deployment to Vercel
 4. Run `npm install` at the repository root.
 5. Run `npm run dev`. The frontend is at `http://localhost:5173` and the API at `http://localhost:4000`.
 
-There is not yet a seeded administrator account. The next implementation step is role seeding and the permission-checked registration/admin CRUD flows; do not expose an open public registration endpoint for privileged accounts.
+### Create the first administrator
+
+Add these optional values to the root `.env`, using a unique password of at least 12 characters, then run `npm run seed`:
+
+```env
+BOOTSTRAP_ADMIN_NAME=PeopleCorps Admin
+BOOTSTRAP_ADMIN_EMAIL=admin@example.com
+BOOTSTRAP_ADMIN_PASSWORD=your-unique-password
+```
+
+The seed command creates or updates the Admin, Manager, and Employee role permissions. It creates an Admin only when the configured email does not already exist. Remove the bootstrap password from `.env` after the account is created. The application has no public registration endpoint.
 
 ## Vercel and Atlas deployment
 
 1. Push this repository to GitHub and import it into Vercel using the repository root as the project root.
-2. In Vercel Project Settings → Environment Variables, configure `MONGODB_URI`, `JWT_SECRET`, and `JWT_EXPIRES_IN`. Set `CLIENT_ORIGIN` to the deployed app origin if using strict CORS.
+2. In Vercel Project Settings → Environment Variables, configure `MONGODB_URI`, `JWT_SECRET`, and `JWT_EXPIRES_IN`. `CLIENT_ORIGIN` is optional; set it to the deployed app origin to restrict CORS.
 3. In MongoDB Atlas Network Access, allow Vercel's database connections. For a quick prototype Atlas supports allowing `0.0.0.0/0`; use strong database credentials and least-privilege DB access, and prefer a restricted network strategy where available.
-4. Deploy. Verify `/api/health`, then finish app bootstrap and create the first Admin.
+4. Deploy. Verify `/api/health`. To initialize the Atlas database, set `MONGODB_URI` and the bootstrap administrator variables in your local root `.env`, then run `npm run seed` once. The seed script creates the three roles and the initial Admin in Atlas.
 
-Vercel functions are stateless and may cold start, so the API reuses Mongoose's process-level connection. The app uses bearer JWTs; logout clears client-side auth state once the frontend auth flow is implemented.
+Vercel functions are stateless and may cold start, so the API reuses Mongoose's process-level connection. The app uses bearer JWTs and clears the client session on logout or token expiry.
 
 ## Assignment implementation checklist
 
@@ -36,11 +46,11 @@ Vercel functions are stateless and may cold start, so the API reuses Mongoose's 
 - [x] Permission-check middleware and dashboard summary endpoint
 - [x] Backend user listing pagination fixed at 10, search, role and active filters
 - [x] Persistent theme foundation and page shell
-- [ ] Seed Admin, Manager, Employee default roles and permissions
-- [ ] Complete authentication state, login/logout and protected frontend routes
-- [ ] Complete permission-filtered sidebar and module pages
-- [ ] User and role CRUD APIs with create/edit/delete permission enforcement
-- [ ] Reports, settings, profile updates and input validation
+- [x] Seed Admin, Manager, Employee default roles and permissions
+- [x] Authentication state, login/logout and protected frontend routes
+- [x] Permission-filtered sidebar and module pages
+- [x] User and role CRUD APIs with create/edit/delete permission enforcement
+- [x] Reports, settings, profile updates and input validation
 - [ ] API documentation and end-to-end deployment walkthrough
 
 ## API outline
@@ -52,9 +62,15 @@ All API responses use `{ success, data }` on success and `{ success: false, erro
 | GET | `/api/health` | Liveness check |
 | POST | `/api/auth/login` | Validate credentials and issue JWT |
 | POST | `/api/auth/logout` | Authenticated logout acknowledgement |
+| GET | `/api/auth/me` | Current authenticated user and latest role permissions |
 | GET | `/api/dashboard` | Counts for users, active/inactive users, and roles |
 | GET | `/api/users?page=1&search=&role=&active=` | Permission-checked users, 10 per page |
-| GET | `/api/roles` | Permission-checked roles and permissions |
-| GET | `/api/profile` | Current user's profile |
+| POST/PATCH/DELETE | `/api/users` and `/api/users/:id` | Create, edit, or delete users (matching permission required) |
+| GET | `/api/roles/options` | Role names for user filters and assignment |
+| GET/POST | `/api/roles` | List or create roles |
+| PATCH/DELETE | `/api/roles/:id` | Edit permissions or delete an unassigned role |
+| GET | `/api/reports?role=<id>` | User totals by role and account status |
+| GET/PATCH | `/api/settings` | Read or update workspace name |
+| GET/PATCH | `/api/profile` | Read or update the signed-in user's profile |
 
-Protected endpoints use `Authorization: Bearer <token>`. Role permissions are stored per module (`dashboard`, `users`, `roles`, `reports`, `settings`, `profile`) with `view`, `create`, `edit`, and `delete` booleans. The required default role matrix is to be added in the seed step.
+Protected endpoints use `Authorization: Bearer <token>`. Role permissions are stored per module (`dashboard`, `users`, `roles`, `reports`, `settings`, `profile`) with `view`, `create`, `edit`, and `delete` booleans. Run the seed command once to create the required default role matrix and initial Admin account.

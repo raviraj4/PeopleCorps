@@ -4,6 +4,8 @@ Base path: `/api`. All protected endpoints require `Authorization: Bearer <token
 
 Successful responses use `{ "success": true, "data": ... }`. Errors use `{ "success": false, "error": { "message": "..." } }`.
 
+`GET /health` is a liveness check that remains available if MongoDB is down. `GET /health/ready` checks the application and its MongoDB connection.
+
 ## Authentication
 
 ### `POST /auth/login`
@@ -133,7 +135,7 @@ All role routes require authentication.
 
 ### `GET /roles/options`
 
-Requires `roles.view` or `users.view`. Returns role IDs and names for filters and user assignment.
+Requires `roles.view`, `users.view`, or `reports.view`. Returns role IDs and names for filters and user assignment.
 
 ### `GET /roles`
 
@@ -170,9 +172,9 @@ Requires `roles.delete`. Returns `409` if users are still assigned to the role.
 
 Requires `reports.view`. Returns role totals and active/inactive counts. The role parameter is optional and must be a valid MongoDB ID.
 
-### `GET /reports/diversity`
+### `GET /reports/diversity?role=<roleId>`
 
-Requires `reports.view`. Aggregates current user gender selections and includes `Not provided` for records without a selection.
+Requires `reports.view`. The optional role filter must be a valid MongoDB role ID. Aggregates current user gender selections and includes `Not provided` for records without a selection.
 
 ```json
 {
@@ -204,7 +206,7 @@ Requires `settings.view` to read and `settings.edit` to update. PATCH body:
 
 ### `GET /profile`, `PATCH /profile`
 
-Requires authentication. PATCH accepts `name`, `email`, and `phone`. To change your own password, also send `currentPassword` and `newPassword` (minimum 8 characters).
+Requires `profile.view` to read and `profile.edit` to update. PATCH accepts `name`, `email`, and `phone`. To change your own password, also send `currentPassword` and `newPassword` (minimum 8 characters).
 
 ```json
 {

@@ -189,6 +189,8 @@ const modules = [{ key: 'dashboard', label: 'Dashboard' }, { key: 'users', label
 const actions = [{ key: 'view', label: 'View' }, { key: 'create', label: 'Create' }, { key: 'edit', label: 'Edit' }, { key: 'delete', label: 'Delete' }];
 
 function ReportsPage() {
+  const { user: currentUser } = useAuth();
+  const canViewUsers = hasPermission(currentUser, 'users', 'view');
   const [roles, setRoles] = useState([]);
   const [filter, setFilter] = useState('');
   const [report, setReport] = useState({ users: [], roleSummary: [], diversity: [], totalUsers: 0, generatedAt: null });
@@ -199,13 +201,20 @@ function ReportsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await api(`/reports/export${filter ? `?role=${filter}` : ''}`);
-      setReport(response.data);
+      const query = filter ? `?role=${encodeURIComponent(filter)}` : '';
+      if (canViewUsers) {
+        const response = await api(`/reports/export${query}`);
+        setReport(response.data);
+      } else {
+        const [summary, diversity] = await Promise.all([api(`/reports${query}`), api(`/reports/diversity${query}`)]);
+        const totalUsers = summary.data.reduce((total, role) => total + role.totalUsers, 0);
+        setReport({ users: [], roleSummary: summary.data, diversity: diversity.data.categories, totalUsers, generatedAt: new Date().toISOString() });
+      }
       setError('');
-      return response.data;
+      return true;
     } catch (e) { setError(e.message); return null; }
     finally { setLoading(false); }
-  }, [filter]);
+  }, [filter, canViewUsers]);
   useEffect(() => { load(); }, [load]);
   async function downloadPdf() {
     setExporting(true);
@@ -227,7 +236,7 @@ function ReportsPage() {
       <div className="report-kpis"><div><Icon name="people" size={17} /><span><strong>{report.totalUsers}</strong><small>Total users</small></span></div><div><Icon name="active" size={17} /><span><strong>{totalActive}</strong><small>Active</small></span></div><div><Icon name="inactive" size={17} /><span><strong>{totalInactive}</strong><small>Inactive</small></span></div><div><Icon name="diversity" size={17} /><span><strong>{report.diversity.reduce((sum, item) => sum + item.count, 0)}</strong><small>Gender records</small></span></div></div>
       <div className="report-panels"><section className="panel report-block"><div className="panel-heading"><div><h2>Users by role</h2><p>Active and inactive account totals</p></div></div><div className="table-wrap"><table><thead><tr><th>ROLE</th><th>TOTAL</th><th>ACTIVE</th><th>INACTIVE</th></tr></thead><tbody>{report.roleSummary.map((row) => <tr key={row.roleId}><td><strong>{row.roleName}</strong></td><td>{row.totalUsers}</td><td>{row.activeUsers}</td><td>{row.inactiveUsers}</td></tr>)}{!report.roleSummary.length && <tr><td colSpan="4" className="empty-cell">No users in this role.</td></tr>}</tbody></table></div></section>
         <section className="panel report-block report-diversity"><div className="panel-heading"><div><h2>Gender diversity</h2><p>{report.totalUsers} user records in this report</p></div></div><div className="report-chart-row">{report.diversity.length ? <PieChart categories={report.diversity} total={report.diversity.reduce((sum, item) => sum + item.count, 0)} /> : <div className="report-empty-chart">No gender data yet</div>}<div className="diversity-legend">{report.diversity.map((item) => <div className="legend-row" key={item.key}><span className="legend-swatch" style={{ background: diversityColors[item.key] || '#9aa3b2' }} /><span className="legend-label">{item.label}</span><strong>{item.count}</strong><span className="legend-percent">{item.percentage}%</span></div>)}</div></div></section></div>
-      <section className="panel report-block report-user-list"><div className="panel-heading"><div><h2>User directory</h2><p>{report.users.length} records with database IDs</p></div></div><div className="table-wrap"><table><thead><tr><th>USER ID</th><th>NAME</th><th>EMAIL</th><th>ROLE</th><th>GENDER</th><th>STATUS</th><th>ADDED</th></tr></thead><tbody>{report.users.map((person) => <tr key={person._id}><td><code className="user-id">{person._id}</code></td><td><strong>{person.name}</strong></td><td>{person.email}</td><td>{person.role?.name || 'Unassigned'}</td><td>{genderLabel(person.gender)}</td><td>{person.isActive ? 'Active' : 'Inactive'}</td><td>{person.createdAt ? new Date(person.createdAt).toLocaleDateString() : '-'}</td></tr>)}{!report.users.length && <tr><td colSpan="7" className="empty-cell">No user records yet.</td></tr>}</tbody></table></div></section>
+      {canViewUsers ? <section className="panel report-block report-user-list"><div className="panel-heading"><div><h2>User directory</h2><p>{report.users.length} records with database IDs</p></div></div><div className="table-wrap"><table><thead><tr><th>USER ID</th><th>NAME</th><th>EMAIL</th><th>ROLE</th><th>GENDER</th><th>STATUS</th><th>ADDED</th></tr></thead><tbody>{report.users.map((person) => <tr key={person._id}><td><code className="user-id">{person._id}</code></td><td><strong>{person.name}</strong></td><td>{person.email}</td><td>{person.role?.name || 'Unassigned'}</td><td>{genderLabel(person.gender)}</td><td>{person.isActive ? 'Active' : 'Inactive'}</td><td>{person.createdAt ? new Date(person.createdAt).toLocaleDateString() : '-'}</td></tr>)}{!report.users.length && <tr><td colSpan="7" className="empty-cell">No user records yet.</td></tr>}</tbody></table></div></section> : <section className="panel report-block report-user-list"><div className="panel-heading"><div><h2>User directory</h2><p>Individual records are hidden because this role does not have user view access.</p></div></div></section>}
       <div className="report-disclaimer">Gender information is optional. “Not provided” indicates a user has no recorded gender selection.</div>
     </div>}
   </div>;

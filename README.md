@@ -34,7 +34,7 @@ The seed command creates or updates the Admin, Manager, and Employee role permis
 1. Push this repository to GitHub and import it into Vercel using the repository root as the project root.
 2. In Vercel Project Settings → Environment Variables, configure `MONGODB_URI`, `JWT_SECRET`, and `JWT_EXPIRES_IN`. `CLIENT_ORIGIN` is optional; set it to the deployed app origin to restrict CORS.
 3. In MongoDB Atlas Network Access, allow Vercel's database connections. For a quick prototype Atlas supports allowing `0.0.0.0/0`; use strong database credentials and least-privilege DB access, and prefer a restricted network strategy where available.
-4. Deploy. Verify `/api/health`. To initialize the Atlas database, set `MONGODB_URI` and the bootstrap administrator variables in your local root `.env`, then run `npm run seed` once. The seed script creates the three roles and the initial Admin in Atlas.
+4. Deploy. Verify `/api/health` for application liveness and `/api/health/ready` for Atlas connectivity. To initialize the Atlas database, set `MONGODB_URI` and the bootstrap administrator variables in your local root `.env`, then run `npm run seed` once. The seed script creates the three roles and the initial Admin in Atlas.
 
 Vercel functions are stateless and may cold start, so the API reuses Mongoose's process-level connection. The app uses bearer JWTs and clears the client session on logout or token expiry.
 
@@ -63,7 +63,8 @@ All API responses use `{ success, data }` on success and `{ success: false, erro
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/health` | Liveness check |
+| GET | `/api/health` | Liveness check (does not require MongoDB) |
+| GET | `/api/health/ready` | Readiness check (requires a MongoDB connection) |
 | POST | `/api/auth/login` | Validate credentials and issue JWT |
 | POST | `/api/auth/logout` | Authenticated logout acknowledgement |
 | GET | `/api/auth/me` | Current authenticated user and latest role permissions |

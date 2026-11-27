@@ -12,7 +12,8 @@ router.get('/', requirePermission('settings', 'view'), async (_req, res, next) =
 });
 router.patch('/', requirePermission('settings', 'edit'), async (req, res, next) => {
   try {
-    const organizationName = req.body?.organizationName?.trim();
+    const rawOrganizationName = req.body?.organizationName;
+    const organizationName = typeof rawOrganizationName === 'string' ? rawOrganizationName.trim() : '';
     if (!organizationName) return res.status(400).json({ success: false, error: { message: 'Organization name is required' } });
     const setting = await Setting.findOneAndUpdate({ key: 'workspace' }, { $set: { value: { organizationName } } }, { new: true, upsert: true, runValidators: true });
     res.json({ success: true, data: setting.value });

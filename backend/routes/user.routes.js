@@ -30,7 +30,7 @@ router.get('/', requirePermission('users', 'view'), async (req, res, next) => {
 
 router.post('/', requirePermission('users', 'create'), async (req, res, next) => {
   try {
-    const { name, email, password, role: roleId, phone = '', isActive = true } = req.body ?? {};
+    const { name, email, password, role: roleId, phone = '', gender = '', isActive = true } = req.body ?? {};
     if (!name?.trim() || !email?.trim() || !password || !roleId) {
       return res.status(400).json({ success: false, error: { message: 'Name, email, password and role are required' } });
     }
@@ -38,7 +38,7 @@ router.post('/', requirePermission('users', 'create'), async (req, res, next) =>
     if (!mongoose.isValidObjectId(roleId) || !(await Role.exists({ _id: roleId }))) {
       return res.status(400).json({ success: false, error: { message: 'Choose a valid role' } });
     }
-    const user = await User.create({ name, email, phone, role: roleId, isActive: Boolean(isActive), passwordHash: await bcrypt.hash(password, 12) });
+    const user = await User.create({ name, email, phone, gender, role: roleId, isActive: Boolean(isActive), passwordHash: await bcrypt.hash(password, 12) });
     await user.populate('role', 'name');
     res.status(201).json({ success: true, data: user });
   } catch (error) { next(error); }
@@ -47,13 +47,14 @@ router.post('/', requirePermission('users', 'create'), async (req, res, next) =>
 router.patch('/:id', requirePermission('users', 'edit'), async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, error: { message: 'Invalid user id' } });
-    const { name, email, phone, role: roleId, isActive, password } = req.body ?? {};
+    const { name, email, phone, gender, role: roleId, isActive, password } = req.body ?? {};
     const user = await User.findById(req.params.id).select('+passwordHash');
     if (!user) return res.status(404).json({ success: false, error: { message: 'User not found' } });
     if (user.id === req.user.id && isActive === false) return res.status(400).json({ success: false, error: { message: 'You cannot deactivate your own account' } });
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
     if (phone !== undefined) user.phone = phone;
+    if (gender !== undefined) user.gender = gender;
     if (isActive !== undefined) user.isActive = Boolean(isActive);
     if (roleId !== undefined) {
       if (!mongoose.isValidObjectId(roleId) || !(await Role.exists({ _id: roleId }))) return res.status(400).json({ success: false, error: { message: 'Choose a valid role' } });

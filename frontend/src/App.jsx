@@ -3,14 +3,16 @@ import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 
 import { api, hasPermission } from './api.js';
 import { useAuth } from './context/AuthContext.jsx';
 import { useTheme } from './context/ThemeContext.jsx';
+import Icon from './components/Icon.jsx';
 
 const navigation = [
-  { label: 'Dashboard', path: '/', module: 'dashboard', icon: 'D' },
-  { label: 'User Management', path: '/user-management', module: 'users', icon: 'U' },
-  { label: 'Role Management', path: '/role-management', module: 'roles', icon: 'R' },
-  { label: 'Reports', path: '/reports', module: 'reports', icon: 'P' },
-  { label: 'Settings', path: '/settings', module: 'settings', icon: 'S' },
-  { label: 'My Profile', path: '/my-profile', module: 'profile', icon: 'M' }
+  { label: 'Dashboard', path: '/', module: 'dashboard', icon: 'dashboard' },
+  { label: 'User Management', path: '/user-management', module: 'users', icon: 'users' },
+  { label: 'Role Management', path: '/role-management', module: 'roles', icon: 'roles' },
+  { label: 'Reports', path: '/reports', module: 'reports', icon: 'reports' },
+  { label: 'Diversity', path: '/diversity', module: 'reports', icon: 'diversity' },
+  { label: 'Settings', path: '/settings', module: 'settings', icon: 'settings' },
+  { label: 'My Profile', path: '/my-profile', module: 'profile', icon: 'profile' }
 ];
 
 function ProtectedRoute() {
@@ -34,6 +36,7 @@ export default function App() {
         <Route path="user-management" element={<ModuleRoute module="users"><UsersPage /></ModuleRoute>} />
         <Route path="role-management" element={<ModuleRoute module="roles"><RolesPage /></ModuleRoute>} />
         <Route path="reports" element={<ModuleRoute module="reports"><ReportsPage /></ModuleRoute>} />
+        <Route path="diversity" element={<ModuleRoute module="reports"><DiversityPage /></ModuleRoute>} />
         <Route path="settings" element={<ModuleRoute module="settings"><SettingsPage /></ModuleRoute>} />
         <Route path="my-profile" element={<ModuleRoute module="profile"><ProfilePage /></ModuleRoute>} />
         <Route path="*" element={<AccessDenied />} />
@@ -52,13 +55,13 @@ function Shell() {
   async function signOut() { await logout(); navigate('/login', { replace: true }); }
   return <div className="app-shell">
     <aside className="sidebar">
-      <Link className="brand" to="/"><span className="brand-mark">P</span><span>People<span className="brand-light">Corps</span></span></Link>
+      <Link className="brand" to="/"><span className="brand-mark"><Icon name="brand" size={20} /></span><span>People<span className="brand-light">Corps</span></span></Link>
       <div className="nav-label">WORKSPACE</div>
-      <nav>{visibleLinks.map((item) => <Link className={`nav-item ${current.path === item.path ? 'selected' : ''}`} to={item.path} key={item.path}><span className="nav-icon">{item.icon}</span>{item.label}</Link>)}</nav>
-      <button className="sidebar-footer account-button" onClick={() => navigate('/my-profile')}><div className="avatar">{initials(user?.name)}</div><div><strong>{user?.name}</strong><small>{user?.role?.name || 'Member'}</small></div><span className="chevron">...</span></button>
+      <nav>{visibleLinks.map((item) => <Link className={`nav-item ${current.path === item.path ? 'selected' : ''}`} to={item.path} key={item.path}><Icon className="nav-icon" name={item.icon} size={18} />{item.label}</Link>)}</nav>
+      <button className="sidebar-footer account-button" onClick={() => navigate('/my-profile')}><div className="avatar">{initials(user?.name)}</div><div><strong>{user?.name}</strong><small>{user?.role?.name || 'Member'}</small></div><Icon className="account-chevron" name="arrow" size={15} /></button>
     </aside>
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">PeopleCorps <span>/</span> <b>{current.label}</b></div><div className="top-actions"><button className="icon-button" onClick={toggleTheme} aria-label="Toggle theme">{theme === 'light' ? 'Dark' : 'Light'}</button><button className="text-button" onClick={signOut}>Sign out</button></div></header>
+      <header className="topbar"><div className="breadcrumb">PeopleCorps <span>/</span> <b>{current.label}</b></div><div className="top-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={16} /><span>{theme === 'light' ? 'Dark' : 'Light'}</span></button><button className="text-button" onClick={signOut}>Sign out</button></div></header>
       <Outlet />
     </main>
   </div>;
@@ -75,12 +78,12 @@ function Dashboard() {
   useEffect(() => {
     api('/dashboard').then((summary) => setStats(summary.data)).catch((e) => setError(e.message));
   }, []);
-  const cards = [['Total users', stats?.totalUsers, 'Across all roles', 'U'], ['Active users', stats?.activeUsers, 'Currently enabled', 'A'], ['Inactive users', stats?.inactiveUsers, 'Access suspended', 'I'], ['Total roles', stats?.totalRoles, 'Permission groups', 'R']];
+  const cards = [['Total users', stats?.totalUsers, 'Across all roles', 'people'], ['Active users', stats?.activeUsers, 'Currently enabled', 'active'], ['Inactive users', stats?.inactiveUsers, 'Access suspended', 'inactive'], ['Total roles', stats?.totalRoles, 'Permission groups', 'roles']];
   return <div className="content">
     <PageHeading eyebrow="OVERVIEW" title="Dashboard" description="A snapshot of people and access across your workspace." action={hasPermission(user, 'users', 'view') && <Link className="primary-button" to="/user-management">Manage users</Link>} />
     {error && <Notice tone="error">{error}</Notice>}
-    <div className="stat-grid">{cards.map(([label, value, note, icon]) => <section className="stat-card" key={label}><div className="stat-top"><span>{label}</span><span className="stat-icon">{icon}</span></div><div className="stat-value">{value ?? '--'}</div><div className="stat-note">{note}</div></section>)}</div>
-    <div className="panel-grid"><section className="panel"><div className="panel-heading"><div><h2>Workspace access</h2><p>Default role groups</p></div>{hasPermission(user, 'roles', 'view') && <Link className="text-button" to="/role-management">Manage roles</Link>}</div><div className="role-list">{(stats?.roles || []).map((role) => <div className="role-row" key={role.id}><span className="role-badge">{initials(role.name)}</span><span className="role-name">{role.name}</span><span className="role-count">{role.userCount} users</span></div>)}</div></section><section className="panel"><div className="panel-heading"><div><h2>Getting started</h2><p>Manage your PeopleCorps workspace</p></div></div><div className="quick-links">{hasPermission(user, 'users', 'view') && <Link to="/user-management">Add or update people <span>→</span></Link>}{hasPermission(user, 'roles', 'view') && <Link to="/role-management">Review module permissions <span>→</span></Link>}{hasPermission(user, 'reports', 'view') && <Link to="/reports">View user reports <span>→</span></Link>}</div></section></div>
+    <div className="stat-grid">{cards.map(([label, value, note, icon]) => <section className="stat-card" key={label}><div className="stat-top"><span>{label}</span><span className="stat-icon"><Icon name={icon} size={17} /></span></div><div className="stat-value">{value ?? '--'}</div><div className="stat-note">{note}</div></section>)}</div>
+    <div className="panel-grid"><section className="panel"><div className="panel-heading"><div><h2>Workspace access</h2><p>Default role groups</p></div>{hasPermission(user, 'roles', 'view') && <Link className="text-button" to="/role-management">Manage roles</Link>}</div><div className="role-list">{(stats?.roles || []).map((role) => <div className="role-row" key={role.id}><span className="role-badge"><Icon name="roles" size={16} /></span><span className="role-name">{role.name}</span><span className="role-count">{role.userCount} users</span></div>)}</div></section><section className="panel"><div className="panel-heading"><div><h2>Getting started</h2><p>Manage your PeopleCorps workspace</p></div></div><div className="quick-links">{hasPermission(user, 'users', 'view') && <Link to="/user-management">Add or update people <Icon name="arrow" size={15} /></Link>}{hasPermission(user, 'roles', 'view') && <Link to="/role-management">Review module permissions <Icon name="arrow" size={15} /></Link>}{hasPermission(user, 'reports', 'view') && <Link to="/diversity">Explore workforce diversity <Icon name="arrow" size={15} /></Link>}</div></section></div>
   </div>;
 }
 
@@ -125,14 +128,14 @@ function UsersPage() {
     } catch (e) { setError(e.message); }
   }
   return <div className="content">
-    <PageHeading title="User management" description="Search, filter, and manage workspace accounts." action={canCreate && <button className="primary-button" onClick={() => setEditing({})}>+ Add user</button>} />
+    <PageHeading title="User management" description="Search, filter, and manage workspace accounts." action={canCreate && <button className="primary-button icon-action" onClick={() => setEditing({})}><Icon name="add" size={16} />Add user</button>} />
     {error && <Notice tone="error">{error}</Notice>}
     <section className="panel data-panel">
       <form className="filter-bar" onSubmit={submitSearch}><input aria-label="Search users" placeholder="Search name or email" value={query} onChange={(e) => setQuery(e.target.value)} /><button className="secondary-button">Search</button><select aria-label="Filter by role" value={roleFilter} onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}><option value="">All roles</option>{roles.map((role) => <option key={role._id} value={role._id}>{role.name}</option>)}</select><select aria-label="Filter by status" value={activeFilter} onChange={(e) => { setActiveFilter(e.target.value); setPage(1); }}><option value="">All statuses</option><option value="true">Active</option><option value="false">Inactive</option></select></form>
-      <div className="table-wrap"><table><thead><tr><th>PERSON</th><th>ROLE</th><th>STATUS</th><th>ADDED</th><th>ACTIONS</th></tr></thead><tbody>{users.map((person) => <tr key={person._id}><td><div className="person-cell"><div className="avatar">{initials(person.name)}</div><div><strong>{person.name}</strong><small>{person.email}</small></div></div></td><td>{person.role?.name || 'Unassigned'}</td><td><span className={`status-pill ${person.isActive ? 'active' : 'inactive'}`}>{person.isActive ? 'Active' : 'Inactive'}</span></td><td>{new Date(person.createdAt).toLocaleDateString()}</td><td><div className="row-actions">{canEdit && <button className="small-button" onClick={() => setEditing(person)}>Edit</button>}{canDelete && <button className="small-button danger" onClick={() => removeUser(person)}>Delete</button>}</div></td></tr>)}{users.length === 0 && <tr><td colSpan="5" className="empty-cell">No users match those filters.</td></tr>}</tbody></table></div>
+      <div className="table-wrap"><table><thead><tr><th>USER ID</th><th>PERSON</th><th>GENDER</th><th>ROLE</th><th>STATUS</th><th>ADDED</th><th>ACTIONS</th></tr></thead><tbody>{users.map((person) => <tr key={person._id}><td><code className="user-id" title={person._id}>{person._id}</code></td><td><div className="person-cell"><div className="avatar">{initials(person.name)}</div><div><strong>{person.name}</strong><small>{person.email}</small></div></div></td><td>{genderLabel(person.gender)}</td><td>{person.role?.name || 'Unassigned'}</td><td><span className={`status-pill ${person.isActive ? 'active' : 'inactive'}`}>{person.isActive ? 'Active' : 'Inactive'}</span></td><td>{new Date(person.createdAt).toLocaleDateString()}</td><td><div className="row-actions">{canEdit && <button className="small-button" onClick={() => setEditing(person)}><Icon name="edit" size={14} />Edit</button>}{canDelete && <button className="small-button danger" onClick={() => removeUser(person)}><Icon name="trash" size={14} />Delete</button>}</div></td></tr>)}{users.length === 0 && <tr><td colSpan="7" className="empty-cell">No users match those filters.</td></tr>}</tbody></table></div>
       <div className="pagination"><span>Showing {pagination.total ? (page - 1) * 10 + 1 : 0}-{Math.min(page * 10, pagination.total)} of {pagination.total} users</span><div><button className="secondary-button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Previous</button><span>Page {page} of {Math.max(pagination.totalPages, 1)}</span><button className="secondary-button" disabled={page >= pagination.totalPages} onClick={() => setPage((p) => p + 1)}>Next</button></div></div>
     </section>
-    {editing && <Modal title={editing._id ? 'Edit user' : 'Add user'} onClose={() => setEditing(null)}><form className="form-grid" onSubmit={saveUser}><label>Full name<input name="name" required defaultValue={editing.name || ''} /></label><label>Email address<input name="email" type="email" required defaultValue={editing.email || ''} /></label><label>{editing._id ? 'New password (optional)' : 'Temporary password'}<input name="password" type="password" minLength="8" required={!editing._id} autoComplete="new-password" /></label><label>Role<select name="role" required defaultValue={editing.role?._id || ''}><option value="" disabled>Select a role</option>{roles.map((role) => <option key={role._id} value={role._id}>{role.name}</option>)}</select></label><label>Phone<input name="phone" defaultValue={editing.phone || ''} /></label><label className="check-label"><input name="isActive" type="checkbox" defaultChecked={editing.isActive ?? true} /> Active account</label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button">Save user</button></div></form></Modal>}
+    {editing && <Modal title={editing._id ? 'Edit user' : 'Add user'} onClose={() => setEditing(null)}><form className="form-grid" onSubmit={saveUser}><label>Full name<input name="name" required defaultValue={editing.name || ''} /></label><label>Email address<input name="email" type="email" required defaultValue={editing.email || ''} /></label><label>{editing._id ? 'New password (optional)' : 'Temporary password'}<input name="password" type="password" minLength="8" required={!editing._id} autoComplete="new-password" /></label><label>Role<select name="role" required defaultValue={editing.role?._id || ''}><option value="" disabled>Select a role</option>{roles.map((role) => <option key={role._id} value={role._id}>{role.name}</option>)}</select></label><label>Gender<select name="gender" defaultValue={editing.gender || ''}><option value="">Not provided</option><option value="woman">Woman</option><option value="man">Man</option><option value="non_binary">Non-binary</option><option value="another_identity">Another identity</option><option value="prefer_not_to_say">Prefer not to say</option></select></label><label>Phone<input name="phone" defaultValue={editing.phone || ''} /></label><label className="check-label"><input name="isActive" type="checkbox" defaultChecked={editing.isActive ?? true} /> Active account</label><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button">Save user</button></div></form></Modal>}
   </div>;
 }
 
@@ -158,9 +161,9 @@ function RolesPage() {
     if (!window.confirm(`Delete the ${role.name} role?`)) return;
     try { await api(`/roles/${role._id}`, { method: 'DELETE' }); load(); } catch (e) { setError(e.message); }
   }
-  return <div className="content"><PageHeading title="Role management" description="Configure what each role can view and change." action={canCreate && <button className="primary-button" onClick={() => setEditing({ permissions: {} })}>+ Create role</button>} />
+  return <div className="content"><PageHeading title="Role management" description="Configure what each role can view and change." action={canCreate && <button className="primary-button icon-action" onClick={() => setEditing({ permissions: {} })}><Icon name="add" size={16} />Create role</button>} />
     {error && <Notice tone="error">{error}</Notice>}
-    <div className="role-cards">{roles.map((role) => <section className="panel role-card" key={role._id}><div className="panel-heading"><div><span className="role-badge">{initials(role.name)}</span><h2>{role.name}</h2><p>{role.description || 'Custom workspace role'}</p></div><div className="role-card-actions">{canEdit && <button className="small-button" onClick={() => setEditing(role)}>Edit</button>}{canDelete && <button className="small-button danger" onClick={() => deleteRole(role)}>Delete</button>}</div></div><p className="role-members">{role.userCount || 0} assigned users</p><div className="permission-summary">{modules.filter((item) => role.permissions?.[item.key]?.view || role.permissions?.get?.(item.key)?.view).map((item) => <span key={item.key}>{item.label}</span>)}</div></section>)}</div>
+    <div className="role-cards">{roles.map((role) => <section className="panel role-card" key={role._id}><div className="panel-heading"><div><span className="role-badge"><Icon name="roles" size={17} /></span><h2>{role.name}</h2><p>{role.description || 'Custom workspace role'}</p></div><div className="role-card-actions">{canEdit && <button className="small-button" onClick={() => setEditing(role)}><Icon name="edit" size={14} />Edit</button>}{canDelete && <button className="small-button danger" onClick={() => deleteRole(role)}><Icon name="trash" size={14} />Delete</button>}</div></div><p className="role-members">{role.userCount || 0} assigned users</p><div className="permission-summary">{modules.filter((item) => role.permissions?.[item.key]?.view || role.permissions?.get?.(item.key)?.view).map((item) => <span key={item.key}>{item.label}</span>)}</div></section>)}</div>
     {editing && <Modal title={editing._id ? `Edit ${editing.name}` : 'Create role'} onClose={() => setEditing(null)} wide><form onSubmit={saveRole} className="role-form"><label>Role name<input name="name" required defaultValue={editing.name || ''} /></label><label>Description<input name="description" defaultValue={editing.description || ''} /></label><div className="permission-table"><div className="permission-row permission-head"><span>MODULE</span>{actions.map((action) => <span key={action.key}>{action.label}</span>)}</div>{modules.map((module) => <div className="permission-row" key={module.key}><strong>{module.label}</strong>{actions.map((action) => <label className="permission-check" key={action.key}><input name={`${module.key}.${action.key}`} type="checkbox" defaultChecked={editing.permissions?.[module.key]?.[action.key] ?? editing.permissions?.get?.(module.key)?.[action.key] ?? false} /><span className="sr-only">{module.label} {action.label}</span></label>)}</div>)}</div><div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setEditing(null)}>Cancel</button><button className="primary-button">Save permissions</button></div></form></Modal>}
   </div>;
 }
@@ -171,11 +174,88 @@ const actions = [{ key: 'view', label: 'View' }, { key: 'create', label: 'Create
 function ReportsPage() {
   const [roles, setRoles] = useState([]);
   const [filter, setFilter] = useState('');
-  const [rows, setRows] = useState([]);
+  const [report, setReport] = useState({ users: [], roleSummary: [], diversity: [], totalUsers: 0, generatedAt: null });
   const [error, setError] = useState('');
+  const [exporting, setExporting] = useState(false);
   useEffect(() => { api('/roles/options').then((r) => setRoles(r.data)).catch((e) => setError(e.message)); }, []);
-  useEffect(() => { api(`/reports${filter ? `?role=${filter}` : ''}`).then((r) => { setRows(r.data); setError(''); }).catch((e) => setError(e.message)); }, [filter]);
-  return <div className="content"><PageHeading title="Reports" description="User counts by role and account status." />{error && <Notice tone="error">{error}</Notice>}<section className="panel data-panel"><div className="filter-bar"><label className="inline-label">Filter by role <select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="">All roles</option>{roles.map((role) => <option key={role._id} value={role._id}>{role.name}</option>)}</select></label></div><div className="table-wrap"><table><thead><tr><th>ROLE</th><th>TOTAL USERS</th><th>ACTIVE</th><th>INACTIVE</th></tr></thead><tbody>{rows.map((row) => <tr key={row.roleId}><td><strong>{row.roleName}</strong></td><td>{row.totalUsers}</td><td>{row.activeUsers}</td><td>{row.inactiveUsers}</td></tr>)}{!rows.length && <tr><td colSpan="4" className="empty-cell">No report data yet.</td></tr>}</tbody></table></div></section></div>;
+  const load = useCallback(async () => {
+    try {
+      const response = await api(`/reports/export${filter ? `?role=${filter}` : ''}`);
+      setReport(response.data);
+      setError('');
+      return response.data;
+    } catch (e) { setError(e.message); return null; }
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
+  async function downloadPdf() {
+    setExporting(true);
+    const latest = await load();
+    setExporting(false);
+    if (latest) window.setTimeout(() => {
+      const previousTitle = document.title;
+      document.title = 'PeopleCorps - Workforce and Diversity Report';
+      window.addEventListener('afterprint', () => { document.title = previousTitle; }, { once: true });
+      window.print();
+    }, 150);
+  }
+  const totalActive = report.roleSummary.reduce((sum, row) => sum + row.activeUsers, 0);
+  const totalInactive = report.roleSummary.reduce((sum, row) => sum + row.inactiveUsers, 0);
+  return <div className="content report-content">
+    <div className="no-print"><PageHeading title="Reports" description="User records, role totals, and current diversity data." action={<button className="primary-button icon-action" onClick={downloadPdf} disabled={exporting}><Icon name="reports" size={16} />{exporting ? 'Preparing PDF...' : 'Download PDF'}</button>} />{error && <Notice tone="error">{error}</Notice>}<div className="filter-bar report-filter"><label className="inline-label">Filter report by role <select value={filter} onChange={(e) => setFilter(e.target.value)}><option value="">All roles</option>{roles.map((role) => <option key={role._id} value={role._id}>{role.name}</option>)}</select></label><span>PDF export includes the records shown in this report.</span></div></div>
+    <div className="report-print-area">
+      <div className="print-report-heading"><div className="report-brand"><Icon name="brand" size={21} /><span>PeopleCorps</span></div><div><h1>People and diversity report</h1><p>Generated {report.generatedAt ? new Date(report.generatedAt).toLocaleString() : new Date().toLocaleString()}{filter ? ` · ${report.roleSummary[0]?.roleName || 'Selected role'}` : ' · All roles'}</p></div></div>
+      <div className="report-kpis"><div><Icon name="people" size={17} /><span><strong>{report.totalUsers}</strong><small>Total users</small></span></div><div><Icon name="active" size={17} /><span><strong>{totalActive}</strong><small>Active</small></span></div><div><Icon name="inactive" size={17} /><span><strong>{totalInactive}</strong><small>Inactive</small></span></div><div><Icon name="diversity" size={17} /><span><strong>{report.diversity.reduce((sum, item) => sum + item.count, 0)}</strong><small>Gender records</small></span></div></div>
+      <div className="report-panels"><section className="panel report-block"><div className="panel-heading"><div><h2>Users by role</h2><p>Active and inactive account totals</p></div></div><div className="table-wrap"><table><thead><tr><th>ROLE</th><th>TOTAL</th><th>ACTIVE</th><th>INACTIVE</th></tr></thead><tbody>{report.roleSummary.map((row) => <tr key={row.roleId}><td><strong>{row.roleName}</strong></td><td>{row.totalUsers}</td><td>{row.activeUsers}</td><td>{row.inactiveUsers}</td></tr>)}{!report.roleSummary.length && <tr><td colSpan="4" className="empty-cell">No users in this role.</td></tr>}</tbody></table></div></section>
+        <section className="panel report-block report-diversity"><div className="panel-heading"><div><h2>Gender diversity</h2><p>{report.totalUsers} user records in this report</p></div></div><div className="report-chart-row">{report.diversity.length ? <PieChart categories={report.diversity} total={report.diversity.reduce((sum, item) => sum + item.count, 0)} /> : <div className="report-empty-chart">No gender data yet</div>}<div className="diversity-legend">{report.diversity.map((item) => <div className="legend-row" key={item.key}><span className="legend-swatch" style={{ background: diversityColors[item.key] || '#9aa3b2' }} /><span className="legend-label">{item.label}</span><strong>{item.count}</strong><span className="legend-percent">{item.percentage}%</span></div>)}</div></div></section></div>
+      <section className="panel report-block report-user-list"><div className="panel-heading"><div><h2>User directory</h2><p>{report.users.length} records with database IDs</p></div></div><div className="table-wrap"><table><thead><tr><th>USER ID</th><th>NAME</th><th>EMAIL</th><th>ROLE</th><th>GENDER</th><th>STATUS</th><th>ADDED</th></tr></thead><tbody>{report.users.map((person) => <tr key={person._id}><td><code className="user-id">{person._id}</code></td><td><strong>{person.name}</strong></td><td>{person.email}</td><td>{person.role?.name || 'Unassigned'}</td><td>{genderLabel(person.gender)}</td><td>{person.isActive ? 'Active' : 'Inactive'}</td><td>{person.createdAt ? new Date(person.createdAt).toLocaleDateString() : '-'}</td></tr>)}{!report.users.length && <tr><td colSpan="7" className="empty-cell">No user records yet.</td></tr>}</tbody></table></div></section>
+      <div className="report-disclaimer">Gender information is optional. “Not provided” indicates a user has no recorded gender selection.</div>
+    </div>
+  </div>;
+}
+
+const diversityColors = { woman: '#725ce5', man: '#3b8bd4', non_binary: '#20a581', another_identity: '#d9914b', prefer_not_to_say: '#d36f89', not_provided: '#9aa3b2' };
+
+function DiversityPage() {
+  const [report, setReport] = useState({ total: 0, categories: [], updatedAt: null });
+  const [error, setError] = useState('');
+  const load = useCallback(() => {
+    api('/reports/diversity').then((response) => { setReport(response.data); setError(''); }).catch((e) => setError(e.message));
+  }, []);
+  useEffect(() => {
+    load();
+    const interval = window.setInterval(load, 30000);
+    window.addEventListener('focus', load);
+    return () => { window.clearInterval(interval); window.removeEventListener('focus', load); };
+  }, [load]);
+  return <div className="content">
+    <PageHeading eyebrow="PEOPLE INSIGHTS" title="Diversity" description="A live overview of the gender information recorded for your workforce." action={<button className="secondary-button icon-action" onClick={load}><Icon name="refresh" size={15} />Refresh</button>} />
+    {error && <Notice tone="error">{error}</Notice>}
+    <section className="panel diversity-panel">
+      <div className="diversity-heading"><div><span className="insight-kicker"><Icon name="diversity" size={15} /> WORKFORCE SNAPSHOT</span><h2>Gender distribution</h2><p>Based on the latest user records. Updates automatically as user profiles change.</p></div><div className="total-people"><Icon name="people" size={18} /><span><strong>{report.total}</strong><small>people in report</small></span></div></div>
+      {report.total ? <div className="diversity-content"><PieChart categories={report.categories} total={report.total} /><div className="diversity-legend">{report.categories.map((category) => <div className="legend-row" key={category.key}><span className="legend-swatch" style={{ background: diversityColors[category.key] || '#9aa3b2' }} /><span className="legend-label">{category.label}</span><strong>{category.count}</strong><span className="legend-percent">{category.percentage}%</span></div>)}</div></div> : <div className="chart-empty"><span className="chart-empty-icon"><Icon name="diversity" size={22} /></span><strong>No user data yet</strong><p>As users are added, their optional gender information will appear here.</p></div>}
+      <div className="diversity-footer"><span>Gender data is optional and includes “Not provided” records.</span><span>{report.updatedAt ? `Updated ${new Date(report.updatedAt).toLocaleTimeString()}` : 'Waiting for data'}</span></div>
+    </section>
+  </div>;
+}
+
+function PieChart({ categories, total }) {
+  const segments = categories.filter((item) => item.count > 0);
+  if (segments.length === 1) return <div className="pie-wrap"><svg className="pie-chart" viewBox="0 0 220 220" role="img" aria-label={`${segments[0].label}: ${segments[0].count} of ${total} people`}><circle cx="110" cy="110" r="96" fill={diversityColors[segments[0].key] || '#9aa3b2'} /></svg></div>;
+  let angle = -90;
+  const paths = segments.map((segment) => {
+    const sweep = (segment.count / total) * 360;
+    const start = polar(110, 110, 96, angle);
+    const end = polar(110, 110, 96, angle + sweep);
+    const path = `M 110 110 L ${start.x} ${start.y} A 96 96 0 ${sweep > 180 ? 1 : 0} 1 ${end.x} ${end.y} Z`;
+    angle += sweep;
+    return <path key={segment.key} d={path} fill={diversityColors[segment.key] || '#9aa3b2'} stroke="var(--surface)" strokeWidth="2"><title>{segment.label}: {segment.count} ({segment.percentage}%)</title></path>;
+  });
+  return <div className="pie-wrap"><svg className="pie-chart" viewBox="0 0 220 220" role="img" aria-label={`Gender distribution across ${total} people`}>{paths}</svg></div>;
+}
+
+function polar(cx, cy, radius, angle) {
+  const radians = (angle * Math.PI) / 180;
+  return { x: Number((cx + radius * Math.cos(radians)).toFixed(3)), y: Number((cy + radius * Math.sin(radians)).toFixed(3)) };
 }
 
 function SettingsPage() {
@@ -206,7 +286,7 @@ function Login() {
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (!loading && user) navigate('/', { replace: true }); }, [loading, user, navigate]);
   async function submit(event) { event.preventDefault(); setBusy(true); setError(''); const form = new FormData(event.currentTarget); try { await login(form.get('email'), form.get('password')); navigate(location.state?.from?.pathname || '/', { replace: true }); } catch (e) { setError(e.message); } finally { setBusy(false); } }
-  return <main className="login-page"><button className="icon-button login-theme" onClick={toggleTheme} aria-label="Toggle theme">{theme === 'light' ? 'Dark' : 'Light'}</button><div className="login-card"><div className="brand login-brand"><span className="brand-mark">P</span><span>People<span className="brand-light">Corps</span></span></div><h1>Welcome back</h1><p>Sign in to manage your workspace.</p>{error && <Notice tone="error">{error}</Notice>}<form onSubmit={submit}><label>Email address<input name="email" type="email" placeholder="you@company.com" autoComplete="username" required /></label><label>Password<input name="password" type="password" placeholder="Enter your password" autoComplete="current-password" required /></label><button className="primary-button login-submit" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</button></form><div className="login-caption">Secure access to PeopleCorps</div></div><div className="login-copyright">PeopleCorps · Role based access management</div></main>;
+  return <main className="login-page"><button className="theme-toggle login-theme" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={16} /><span>{theme === 'light' ? 'Dark' : 'Light'}</span></button><div className="login-card"><div className="brand login-brand"><span className="brand-mark"><Icon name="brand" size={20} /></span><span>People<span className="brand-light">Corps</span></span></div><h1>Welcome back</h1><p>Sign in to manage your workspace.</p>{error && <Notice tone="error">{error}</Notice>}<form onSubmit={submit}><label>Email address<input name="email" type="email" placeholder="you@company.com" autoComplete="username" required /></label><label>Password<input name="password" type="password" placeholder="Enter your password" autoComplete="current-password" required /></label><button className="primary-button login-submit" disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</button></form><div className="login-caption">Secure access to PeopleCorps</div></div><div className="login-copyright">PeopleCorps · Role based access management</div></main>;
 }
 
 function Modal({ title, onClose, children, wide = false }) {
@@ -215,3 +295,6 @@ function Modal({ title, onClose, children, wide = false }) {
 function Notice({ children, tone = 'success' }) { return <div className={`notice ${tone}`}>{children}</div>; }
 function AccessDenied() { return <div className="content"><PageHeading title="Access restricted" description="Your role does not have permission to view this page." /></div>; }
 function initials(value = '') { return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0].toUpperCase()).join('') || 'U'; }
+function genderLabel(gender) {
+  return ({ woman: 'Woman', man: 'Man', non_binary: 'Non-binary', another_identity: 'Another identity', prefer_not_to_say: 'Prefer not to say' })[gender] || 'Not provided';
+}

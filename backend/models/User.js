@@ -5,6 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 254, match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Enter a valid email address'] },
   passwordHash: { type: String, required: true, select: false },
   role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
+  gender: { type: String, enum: ['', 'woman', 'man', 'non_binary', 'another_identity', 'prefer_not_to_say'], default: '', trim: true },
   isActive: { type: Boolean, default: true },
   phone: { type: String, trim: true, default: '' }
 }, { timestamps: true });

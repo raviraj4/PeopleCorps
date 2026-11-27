@@ -294,10 +294,60 @@ function SettingsPage() {
 
 function ProfilePage() {
   const { user, updateUser } = useAuth();
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  async function save(event) { event.preventDefault(); const form = new FormData(event.currentTarget); const body = Object.fromEntries(form.entries()); if (!body.newPassword) { delete body.newPassword; delete body.currentPassword; } try { const response = await api('/profile', { method: 'PATCH', body }); updateUser(response.data); setMessage('Profile updated.'); setError(''); event.currentTarget.reset(); } catch (e) { setError(e.message); } }
-  return <div className="content"><PageHeading title="My profile" description="Update your personal details and password." />{error && <Notice tone="error">{error}</Notice>}{message && <Notice>{message}</Notice>}<section className="panel settings-panel"><form className="form-grid" onSubmit={save}><label>Full name<input name="name" required defaultValue={user.name} /></label><label>Email address<input name="email" type="email" required defaultValue={user.email} /></label><label>Phone<input name="phone" defaultValue={user.phone || ''} /></label><div className="profile-role">Current role <strong>{user.role?.name}</strong></div><div className="section-divider"><strong>Change password</strong><span>Leave blank to keep your current password.</span></div><label>Current password<input name="currentPassword" type="password" autoComplete="current-password" /></label><label>New password<input name="newPassword" type="password" minLength="8" autoComplete="new-password" /></label><button className="primary-button">Save profile</button></form></section></div>;
+  const [profileError, setProfileError] = useState('');
+  const [profileMessage, setProfileMessage] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordMessage, setPasswordMessage] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  async function saveProfile(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = Object.fromEntries(new FormData(form).entries());
+    setSavingProfile(true); setProfileError(''); setProfileMessage('');
+    try {
+      const response = await api('/profile', { method: 'PATCH', body });
+      updateUser(response.data);
+      setProfileMessage('Profile updated.');
+    } catch (e) { setProfileError(e.message); }
+    finally { setSavingProfile(false); }
+  }
+
+  async function changePassword(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const body = Object.fromEntries(new FormData(form).entries());
+    setSavingPassword(true); setPasswordError(''); setPasswordMessage('');
+    try {
+      await api('/profile', { method: 'PATCH', body });
+      setPasswordMessage('Password changed successfully.');
+      form.reset();
+    } catch (e) { setPasswordError(e.message); }
+    finally { setSavingPassword(false); }
+  }
+
+  return <div className="content"><PageHeading title="My profile" description="Update your personal details and manage your password." />
+    {profileError && <Notice tone="error">{profileError}</Notice>}{profileMessage && <Notice>{profileMessage}</Notice>}
+    <section className="panel settings-panel profile-panel">
+      <form className="form-grid" onSubmit={saveProfile}>
+        <h2 className="profile-section-title">Edit profile</h2>
+        <label>Full name<input name="name" required defaultValue={user.name} /></label>
+        <label>Email address<input name="email" type="email" required defaultValue={user.email} /></label>
+        <label>Phone<input name="phone" defaultValue={user.phone || ''} /></label>
+        <div className="profile-role">Current role <strong>{user.role?.name}</strong></div>
+        <button className="primary-button" disabled={savingProfile}>{savingProfile ? 'Saving profile…' : 'Save profile'}</button>
+      </form>
+      <form className="form-grid password-form" onSubmit={changePassword}>
+        <div className="section-divider"><strong>Change password</strong><span>Enter your current password and choose a new one.</span></div>
+        {passwordError && <div className="profile-form-notice"><Notice tone="error">{passwordError}</Notice></div>}
+        {passwordMessage && <div className="profile-form-notice"><Notice>{passwordMessage}</Notice></div>}
+        <label>Current password<input name="currentPassword" type="password" autoComplete="current-password" required /></label>
+        <label>New password<input name="newPassword" type="password" minLength="8" autoComplete="new-password" required /></label>
+        <button className="primary-button" disabled={savingPassword}>{savingPassword ? 'Changing password…' : 'Change password'}</button>
+      </form>
+    </section>
+  </div>;
 }
 
 function Login() {

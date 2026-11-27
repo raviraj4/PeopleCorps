@@ -51,9 +51,13 @@ Vercel functions are stateless and may cold start, so the API reuses Mongoose's 
 - [x] Permission-filtered sidebar and module pages
 - [x] User and role CRUD APIs with create/edit/delete permission enforcement
 - [x] Reports, settings, profile updates and input validation
-- [ ] API documentation and end-to-end deployment walkthrough
+- [x] Optional gender field and automatically refreshed diversity chart
+- [x] API documentation with request/response examples
+- [x] Local setup, Atlas seed, Vercel configuration, and deployment walkthrough
 
 ## API outline
+
+Full endpoint details, request bodies, permission requirements, and response examples are in [docs/API.md](docs/API.md).
 
 All API responses use `{ success, data }` on success and `{ success: false, error: { message } }` on error.
 
@@ -70,6 +74,8 @@ All API responses use `{ success, data }` on success and `{ success: false, erro
 | GET/POST | `/api/roles` | List or create roles |
 | PATCH/DELETE | `/api/roles/:id` | Edit permissions or delete an unassigned role |
 | GET | `/api/reports?role=<id>` | User totals by role and account status |
+| GET | `/api/reports/diversity` | Aggregated gender counts for the diversity chart |
+| GET | `/api/reports/export?role=<id>` | Filtered user directory, role totals, and gender data for PDF export |
 | GET/PATCH | `/api/settings` | Read or update workspace name |
 | GET/PATCH | `/api/profile` | Read or update the signed-in user's profile |
 

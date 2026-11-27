@@ -48,20 +48,22 @@ export default function App() {
 function Shell() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const current = navigation.find((item) => item.path === location.pathname) || navigation[0];
   const visibleLinks = navigation.filter((item) => hasPermission(user, item.module, 'view'));
   async function signOut() { await logout(); navigate('/login', { replace: true }); }
   return <div className="app-shell">
-    <aside className="sidebar">
-      <Link className="brand" to="/"><span className="brand-mark"><Icon name="brand" size={20} /></span><span>People<span className="brand-light">Corps</span></span></Link>
+    <aside className={`sidebar ${mobileNavOpen ? 'mobile-open' : ''}`}>
+      <Link className="brand" to="/" onClick={() => setMobileNavOpen(false)}><span className="brand-mark"><Icon name="brand" size={20} /></span><span>People<span className="brand-light">Corps</span></span></Link>
       <div className="nav-label">WORKSPACE</div>
-      <nav>{visibleLinks.map((item) => <Link className={`nav-item ${current.path === item.path ? 'selected' : ''}`} to={item.path} key={item.path}><Icon className="nav-icon" name={item.icon} size={18} />{item.label}</Link>)}</nav>
-      <button className="sidebar-footer account-button" onClick={() => navigate('/my-profile')}><div className="avatar">{initials(user?.name)}</div><div><strong>{user?.name}</strong><small>{user?.role?.name || 'Member'}</small></div><Icon className="account-chevron" name="arrow" size={15} /></button>
+      <nav>{visibleLinks.map((item) => <Link className={`nav-item ${current.path === item.path ? 'selected' : ''}`} to={item.path} key={item.path} onClick={() => setMobileNavOpen(false)}><Icon className="nav-icon" name={item.icon} size={18} />{item.label}</Link>)}</nav>
+      <button className="sidebar-footer account-button" onClick={() => { setMobileNavOpen(false); navigate('/my-profile'); }}><div className="avatar">{initials(user?.name)}</div><div><strong>{user?.name}</strong><small>{user?.role?.name || 'Member'}</small></div><Icon className="account-chevron" name="arrow" size={15} /></button>
     </aside>
+    <button className={`mobile-nav-backdrop ${mobileNavOpen ? 'visible' : ''}`} aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} tabIndex={mobileNavOpen ? 0 : -1} />
     <main className="main-area">
-      <header className="topbar"><div className="breadcrumb">PeopleCorps <span>/</span> <b>{current.label}</b></div><div className="top-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={16} /><span>{theme === 'light' ? 'Dark' : 'Light'}</span></button><button className="text-button" onClick={signOut}>Sign out</button></div></header>
+      <header className="topbar"><button className="mobile-menu-button" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Icon name="menu" size={19} /></button><div className="breadcrumb">PeopleCorps <span>/</span> <b>{current.label}</b></div><div className="top-actions"><button className="theme-toggle" onClick={toggleTheme} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}><Icon name={theme === 'light' ? 'moon' : 'sun'} size={16} /><span>{theme === 'light' ? 'Dark' : 'Light'}</span></button><button className="text-button" onClick={signOut}>Sign out</button></div></header>
       <Outlet />
     </main>
   </div>;

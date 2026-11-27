@@ -19,7 +19,8 @@ const paths = {
   trash: <><path d="M4.5 7h15M10 11v5m4-5v5M6.5 7l.8 13h9.4l.8-13M9 7V4.5h6V7" /></>,
   close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   arrow: <><path d="M4 12h15M13 6l6 6-6 6" /></>,
-  refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.8 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 18.2 15" /></>
+  refresh: <><path d="M20 7v5h-5M4 17v-5h5" /><path d="M5.8 9A7 7 0 0 1 18 6.5L20 12M4 12l2 5.5A7 7 0 0 0 18.2 15" /></>,
+  menu: <><path d="M4 6h16M4 12h16M4 18h16" /></>
 };
 
 export default function Icon({ name, size = 18, className = '' }) {
